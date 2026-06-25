@@ -1,12 +1,315 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MINA - MANUTENÇÃO</title>
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <h1>Ola mundo</h1>
-    <h2>ola mundo</h2>
+
+<main class="page-shell">
+
+<h2>STATUS - MINA MANUTENÇÃO</h2>
+<div class="top-actions">
+  <a href="historico.html" class="btn-link">Ver Gestao de Parada da Manutencao</a>
+  <a href="relatorio.html" class="btn-link">Relatorio de Parada</a>
+  <a href="historico_opcoes.html" class="btn-link">Historico por Opcao</a>
+</div>
+<form id="equipamentoForm">
+  <div class="form-field form-field-wide">
+    <label for="nomeEquip">PAINEL DE OPERAÇÃO:</label>
+    <input type="text" id="nomeEquip" required />
+  </div>
+
+  <div class="form-field">
+    <label for="statusEquip">Status:</label>
+    <select id="statusEquip" required>
+      <option value="" disabled selected>Selecione o status</option>
+      <option value="parado">Parado</option>
+      <option value="liberado">Liberado</option>
+      <option value="standby">Standby</option>
+    </select>
+  </div>
+
+  <div class="form-field">
+    <label for="turnoEquip">Turno:</label>
+    <select id="turnoEquip" required>
+      <option value="" disabled selected>Selecione o turno</option>
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+      <option value="D">D</option>
+    </select>
+  </div>
+
+  <div class="form-field">
+    <label for="turmaEquip">Turma:</label>
+    <select id="turmaEquip" required>
+      <option value="" disabled selected>Selecione a turma</option>
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+      <option value="D">D</option>
+    </select>
+  </div>
+
+  <div class="form-field form-field-wide">
+    <label for="causaParada">EQUIPAMENTO /CAUSA:</label>
+    <input type="text" id="causaParada" placeholder="Equipamento e a causa (se aplicável)" />
+  </div>
+
+  <div class="form-field">
+    <label for="horaInicio">Horário Início:</label>
+    <input type="time" id="horaInicio" />
+  </div>
+
+  <div class="form-field">
+    <label for="horaFim">Horário Fim:</label>
+    <input type="time" id="horaFim" />
+  </div>
+
+  <div class="form-actions">
+    <button type="submit">Cadastrar</button>
+    <button type="button" id="limparBtn">Limpar</button>
+  </div>
+</form>
+<div style="text-align-last: left; margin-bottom: 20px;">
+  <img src="img/logo-header (1).png" alt="Logomarca" style="max-width: 200px; height: auto;" />
+</div>
+<h2>STATUS MINA</h2>
+
+<table id="relatorioEquip">
+  <thead>
+    <tr>
+      <th>Painel de Lavra</th>
+      <th>Status</th>
+      <th>Turno</th>
+      <th>Turma</th>
+      <th>Causa da Parada</th>
+      <th>Horário Início</th>
+      <th>Horário Fim</th>
+      <th>Data e Hora Cadastro</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Equipamentos cadastrados aparecem aqui -->
+  </tbody>
+</table>
+
+<script src="app-api.js"></script>
+<script>
+  const form = document.getElementById('equipamentoForm');
+  const nomeInput = document.getElementById('nomeEquip');
+  const statusSelect = document.getElementById('statusEquip');
+  const turnoSelect = document.getElementById('turnoEquip');
+  const turmaSelect = document.getElementById('turmaEquip');
+  const causaInput = document.getElementById('causaParada');
+  const horaInicioInput = document.getElementById('horaInicio');
+  const horaFimInput = document.getElementById('horaFim');
+  const tabelaCorpo = document.querySelector('#relatorioEquip tbody');
+  const limparBtn = document.getElementById('limparBtn');
+  
+  let equipamentos = [];
+  let historicoParadas = [];
+  let editandoIndex = null;
+  let nextId = 1;
+
+  limparBtn.addEventListener('click', () => {
+    form.reset();
+    editandoIndex = null;
+    nomeInput.focus();
+  });
+
+  async function carregarDados() {
+    try {
+      const estado = await window.serverStore.getState();
+      equipamentos = Array.isArray(estado.equipamentos) ? estado.equipamentos : [];
+      historicoParadas = Array.isArray(estado.historicoParadas) ? estado.historicoParadas : [];
+      nextId = equipamentos.length > 0 ? Math.max(...equipamentos.map((e) => e.id)) + 1 : 1;
+      renderTabela();
+    } catch (erro) {
+      alert('Nao foi possivel carregar os dados locais.');
+      console.error(erro);
+    }
+  }
+
+  async function salvarDados() {
+    await window.serverStore.saveState({
+      equipamentos,
+      historicoParadas
+    });
+
+    criarJSONVirtual();
+  }
+
+  // Criar JSON virtual
+  function criarJSONVirtual() {
+    const dadosJSON = {
+      equipamentos: equipamentos
+    };
+    
+    console.log('Dados em formato JSON:');
+    console.log(JSON.stringify(dadosJSON, null, 2));
+    
+    return dadosJSON;
+  }
+
+  function formatDateTime(date) {
+    const options = { 
+      year: 'numeric', month: '2-digit', day: '2-digit', 
+      hour: '2-digit', minute: '2-digit', second: '2-digit' 
+    };
+    return new Intl.DateTimeFormat('pt-BR', options).format(date);
+  }
+
+  function renderTabela() {
+    tabelaCorpo.innerHTML = '';
+    equipamentos.forEach((equip, idx) => {
+      const tr = document.createElement('tr');
+
+      const tdNome = document.createElement('td');
+      tdNome.textContent = equip.nome;
+
+      const tdStatus = document.createElement('td');
+      tdStatus.textContent = equip.status.charAt(0).toUpperCase() + equip.status.slice(1);
+      tdStatus.className = `status-${equip.status}`;
+
+      const tdTurno = document.createElement('td');
+      tdTurno.textContent = equip.turno || '-';
+
+      const tdTurma = document.createElement('td');
+      tdTurma.textContent = equip.turma || '-';
+
+      const tdCausa = document.createElement('td');
+      tdCausa.textContent = equip.causa || '-';
+
+      const tdHoraInicio = document.createElement('td');
+      tdHoraInicio.textContent = equip.horaInicio || '-';
+
+      const tdHoraFim = document.createElement('td');
+      tdHoraFim.textContent = equip.horaFim || '-';
+
+      const tdDataHora = document.createElement('td');
+      tdDataHora.textContent = equip.dataHoraCadastro || '-';
+
+      const tdAcoes = document.createElement('td');
+      tdAcoes.innerHTML = `
+        <div class="acoes-inline">
+          <button class="btn editar" onclick="editarEquipamento(${idx})">Editar</button>
+          <button class="btn excluir" onclick="excluirEquipamento(${idx})">Excluir</button>
+        </div>
+      `;
+
+      tr.appendChild(tdNome);
+      tr.appendChild(tdStatus);
+      tr.appendChild(tdTurno);
+      tr.appendChild(tdTurma);
+      tr.appendChild(tdCausa);
+      tr.appendChild(tdHoraInicio);
+      tr.appendChild(tdHoraFim);
+      tr.appendChild(tdDataHora);
+      tr.appendChild(tdAcoes);
+
+      tabelaCorpo.appendChild(tr);
+    });
+  }
+
+  function registrarHistoricoParada(equipamento, acao) {
+    if (equipamento.status !== 'parado') return;
+
+    historicoParadas.unshift({
+      idHistorico: Date.now(),
+      equipamentoId: equipamento.id,
+      nome: equipamento.nome,
+      status: equipamento.status,
+      turno: equipamento.turno,
+      turma: equipamento.turma,
+      causa: equipamento.causa,
+      horaInicio: equipamento.horaInicio,
+      horaFim: equipamento.horaFim,
+      dataHoraCadastro: equipamento.dataHoraCadastro,
+      acao,
+      dataHoraRegistro: formatDateTime(new Date())
+    });
+  };
+
+  form.addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    const nome = nomeInput.value.trim();
+    const status = statusSelect.value;
+    const turno = turnoSelect.value;
+    const turma = turmaSelect.value;
+    const causa = causaInput.value.trim();
+    const horaInicio = horaInicioInput.value;
+    const horaFim = horaFimInput.value;
+
+    if (!nome || !status || !turno || !turma) return;
+
+    const dataHoraCadastro = formatDateTime(new Date());
+
+    const equipamentoObj = {
+      id: editandoIndex !== null ? equipamentos[editandoIndex].id : nextId++,
+      nome,
+      status,
+      turno,
+      turma,
+      causa,
+      horaInicio,
+      horaFim,
+      dataHoraCadastro
+    };
+
+    if (editandoIndex !== null) {
+      equipamentos[editandoIndex] = equipamentoObj;
+      registrarHistoricoParada(equipamentoObj, 'Edicao');
+      editandoIndex = null;
+    } else {
+      equipamentos.push(equipamentoObj);
+      registrarHistoricoParada(equipamentoObj, 'Cadastro');
+    }
+
+    try {
+      renderTabela();
+      await salvarDados();
+      form.reset();
+    } catch (erro) {
+      alert('Erro ao salvar os dados. Tente novamente.');
+      console.error(erro);
+    }
+  });
+
+  window.editarEquipamento = function(index) {
+    const equip = equipamentos[index];
+    nomeInput.value = equip.nome;
+    statusSelect.value = equip.status;
+    turnoSelect.value = equip.turno || '';
+    turmaSelect.value = equip.turma || '';
+    causaInput.value = equip.causa || '';
+    horaInicioInput.value = equip.horaInicio || '';
+    horaFimInput.value = equip.horaFim || '';
+    editandoIndex = index;
+    nomeInput.focus();
+  };
+
+  window.excluirEquipamento = async function(index) {
+    equipamentos.splice(index, 1);
+    try {
+      renderTabela();
+      await salvarDados();
+    } catch (erro) {
+      alert('Erro ao excluir o registro.');
+      console.error(erro);
+    }
+  };
+
+  // Carregar dados ao iniciar a página
+  carregarDados();
+</script>
+
+</main>
+
 </body>
 </html>
