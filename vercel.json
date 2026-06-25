@@ -5,6 +5,22 @@
     {
       "source": "/",
       "destination": "/index.html"
+    },
+    {
+      "source": "/index",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/historico",
+      "destination": "/historico.html"
+    },
+    {
+      "source": "/relatorio",
+      "destination": "/relatorio.html"
+    },
+    {
+      "source": "/historico_opcoes",
+      "destination": "/historico_opcoes.html"
     }
   ]
 }
