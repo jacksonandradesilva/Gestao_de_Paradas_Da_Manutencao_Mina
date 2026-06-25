@@ -26,6 +26,27 @@ Esse formato permite rodar o projeto sem `npm start`.
 
 Observacao: ao limpar os dados do navegador, os registros locais tambem sao removidos.
 
+## Deploy no Vercel
+
+Este projeto pode ser publicado no Vercel como site estatico.
+
+### O que foi configurado
+
+- Arquivo `vercel.json` para servir `/` em `index.html`.
+
+### Passos
+
+1. Suba o projeto para um repositorio Git (GitHub, GitLab ou Bitbucket).
+2. No Vercel, clique em **New Project** e importe o repositorio.
+3. Mantenha as configuracoes padrao (sem Build Command e sem Output Directory customizado).
+4. Clique em **Deploy**.
+
+### Importante sobre dados
+
+- Os dados sao salvos no Local Storage do navegador.
+- Isso significa que cada navegador/dispositivo tera seus proprios dados.
+- Os dados nao sao compartilhados entre usuarios.
+
 ## Telas disponiveis
 
 - Painel principal: cadastro e atualizacao de status
